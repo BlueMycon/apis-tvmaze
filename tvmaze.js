@@ -1,5 +1,7 @@
 "use strict";
 
+const BASE_API_URL = "http://api.tvmaze.com/";
+
 const $showsList = $("#showsList");
 const $episodesArea = $("#episodesArea");
 const $searchForm = $("#searchForm");
@@ -14,6 +16,7 @@ const $searchForm = $("#searchForm");
 
 async function getShowsByTerm(term) {
   // ADD: Remove placeholder & make request to TVMaze search shows API.
+  // TODO: refactor axios call
   let response = await axios.get(`http://api.tvmaze.com/search/shows?q=${term}`);
   let shows = response.data.map(elem => {
     return {
@@ -46,7 +49,7 @@ function displayShows(shows) {
            <div class="media-body">
              <h5 class="text-primary">${show.name}</h5>
              <div><small>${show.summary}</small></div>
-             <button class="btn btn-outline-light btn-sm Show-getEpisodes">
+             <button class="btn btn-outline-light btn-sm Show-getEpisodes" data-bs-toggle="modal" data-bs-target="#episodesModal">
                Episodes
              </button>
            </div>
@@ -58,12 +61,10 @@ function displayShows(shows) {
   }
 }
 
-$showsList.on("click", ".Show-getEpisodes", async function handleShowEpisodesButton() {
-  console.log('here');
-  const id = $(this).closest(".Show").data("show-id");
-  console.log("id=",id);
+$showsList.on("click", ".Show-getEpisodes", async function handleShowEpisodesButton(event) {
+  const id = $(event.target).closest(".Show").data("show-id");
   await getEpisodesAndDisplay(id);
-})
+});
 
 /** Handle search form submission: get shows from API and display.
  *    Hide episodes area (that only gets shown if they ask for episodes)
@@ -73,7 +74,6 @@ async function searchShowsAndDisplay() {
   const term = $("#searchForm-term").val();
   const shows = await getShowsByTerm(term);
 
-  $episodesArea.hide();
   displayShows(shows);
 }
 
@@ -88,9 +88,17 @@ $searchForm.on("submit", async function handleSearchForm (evt) {
  */
 
 async function getEpisodesOfShow(showId) {
-  const response = await axios.get(`http://api.tvmaze.com/shows/${showId}/episodes`);
-  const episodes = response.data.map(({ id, name, season, number }) => ({ id, name, season, number }));
-  console.log('episodes=', episodes);
+  // TODO: more general axios request
+  // const response = await axios.get(`http://api.tvmaze.com/shows/${showId}/episodes`);
+  const response = await axios({
+    baseURL: BASE_API_URL,
+    url: `shows/${showId}/episodes`,
+    method: "GET"
+  });
+  const episodes = response.data.map(({ id, name, season, number }) => {
+    return ({ id, name, season, number });
+  });
+  
   return episodes;
  }
 
@@ -107,10 +115,12 @@ function displayEpisodes(episodes) {
     $("#episodesList").append(`<li>${name} (Season ${season}, Episode ${number})</li>`);
   }
 
-  const displayStyle = $episodesArea.css("display");
-  if (displayStyle === "none") {
-    $episodesArea.css("display", "");
-  }
+  // const displayStyle = $episodesArea.css("display");
+  // if (displayStyle === "none") {
+  //   $episodesArea.css("display", "");
+  // }
+
+  // $episodesArea.show();
 }
 
 /** Given a show ID, get from API and display episode list
