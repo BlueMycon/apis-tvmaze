@@ -58,6 +58,12 @@ function displayShows(shows) {
   }
 }
 
+$showsList.on("click", ".Show-getEpisodes", async function handleShowEpisodesButton() {
+  console.log('here');
+  const id = $(this).closest(".Show").data("show-id");
+  console.log("id=",id);
+  await getEpisodesAndDisplay(id);
+})
 
 /** Handle search form submission: get shows from API and display.
  *    Hide episodes area (that only gets shown if they ask for episodes)
@@ -81,10 +87,39 @@ $searchForm.on("submit", async function handleSearchForm (evt) {
  *      { id, name, season, number }
  */
 
-// async function getEpisodesOfShow(id) { }
+async function getEpisodesOfShow(showId) {
+  const response = await axios.get(`http://api.tvmaze.com/shows/${showId}/episodes`);
+  const episodes = response.data.map(({ id, name, season, number }) => ({ id, name, season, number }));
+  console.log('episodes=', episodes);
+  return episodes;
+ }
 
-/** Write a clear docstring for this function... */
+/** Given an array of Episodes, clear the episode list and display the episodes
+ *
+ * @param {array} episodes
+ */
 
-// function displayEpisodes(episodes) { }
+function displayEpisodes(episodes) {
+  $("#episodesList").empty();
 
-// add other functions that will be useful / match our structure & design
+  for (let episode of episodes) {
+    const { name, season, number } = episode;
+    $("#episodesList").append(`<li>${name} (Season ${season}, Episode ${number})</li>`);
+  }
+
+  const displayStyle = $episodesArea.css("display");
+  if (displayStyle === "none") {
+    $episodesArea.css("display", "");
+  }
+}
+
+/** Given a show ID, get from API and display episode list
+ *
+ * @param {nummber} showId
+ */
+
+async function getEpisodesAndDisplay(showId) {
+  const episodes = await getEpisodesOfShow(showId);
+  displayEpisodes(episodes);
+}
+
